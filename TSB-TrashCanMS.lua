@@ -87,25 +87,31 @@ end
 
 local function attackPlayer(target)
 	stopAttack = false
+	
 	while target and not stopAttack and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 do
 		local trash = getRandomTrashcan()
-		if not trash then break end
-
+		if not trash then
+			task.wait(1)
+			continue
+		end
+		
+		-- Teleport near trashcan, face it, then click
 		teleportNear(trash.Position, 2)
 		lookAt(trash.Position)
 		task.wait(0.4)
 		click()
-
-		task.wait(1)
-
+		
+		task.wait(0.8)
+		
 		local root = target.Character:FindFirstChild("HumanoidRootPart")
 		if root then
+			-- Teleport near player, face them, then throw
 			teleportNear(root.Position, 2.5)
 			lookAt(root.Position)
-			task.wait(0.3)
+			task.wait(0.25)
 			throw()
 		end
-
+		
 		task.wait(1)
 	end
 end
