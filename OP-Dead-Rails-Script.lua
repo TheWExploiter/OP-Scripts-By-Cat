@@ -2,7 +2,7 @@ local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jens
 local Window = OrionLib:MakeWindow({
 	Name = "OP Dead Rails Script (By Cat)",
 	HidePremium = false,
-	IntroText = "OP Dead Rails Script",
+	IntroText = "OP Dead Rails Script (By Cat)",
 	SaveConfig = false
 })
 
@@ -138,7 +138,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-	Name = "Auto Collect MoneyBag",
+	Name = "Auto Collect Money",
 	Default = false,
 	Callback = function(state)
 		collectOn = state
