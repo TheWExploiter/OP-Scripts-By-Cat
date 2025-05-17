@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+local stopAttack = false
+local targetPlayer = nil
+
 local function makeUI()
 	local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 	ScreenGui.Name = "TrashcanMoveset"
@@ -83,11 +86,11 @@ local function getRandomTrashcan()
 end
 
 local function attackPlayer(target)
-	while target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 do
+	stopAttack = false
+	while target and not stopAttack and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 do
 		local trash = getRandomTrashcan()
 		if not trash then break end
 
-		-- Teleport to trashcan & pick it
 		teleportNear(trash.Position, 2)
 		lookAt(trash.Position)
 		task.wait(0.4)
@@ -95,7 +98,6 @@ local function attackPlayer(target)
 
 		task.wait(1)
 
-		-- Teleport to enemy & throw
 		local root = target.Character:FindFirstChild("HumanoidRootPart")
 		if root then
 			teleportNear(root.Position, 2.5)
@@ -106,6 +108,24 @@ local function attackPlayer(target)
 
 		task.wait(1)
 	end
+end
+
+local function createStopButton()
+	local stopButton = Instance.new("TextButton", Scroll)
+	stopButton.Size = UDim2.new(1, -10, 0, 35)
+	stopButton.Position = UDim2.new(0, 5, 0, #Scroll:GetChildren() * 40)
+	stopButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+	stopButton.TextColor3 = Color3.new(1, 1, 1)
+	stopButton.Font = Enum.Font.GothamBlack
+	stopButton.TextScaled = true
+	stopButton.Text = "STOP Attacking"
+
+	stopButton.MouseButton1Click:Connect(function()
+		stopAttack = true
+		targetPlayer = nil
+	end)
+
+	Scroll.CanvasSize = UDim2.new(0, 0, 0, #Scroll:GetChildren() * 40)
 end
 
 local function createButton(player)
@@ -120,6 +140,7 @@ local function createButton(player)
 
 	Button.MouseButton1Click:Connect(function()
 		targetPlayer = player
+		attackPlayer(player)
 	end)
 
 	Scroll.CanvasSize = UDim2.new(0, 0, 0, #Scroll:GetChildren() * 40)
