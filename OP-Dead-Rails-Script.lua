@@ -1,7 +1,4 @@
--- Orion UI by jensonhirst
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jensonhirst/Orion/main/source"))()
-
--- Create Window
 local Window = OrionLib:MakeWindow({
 	Name = "OP Dead Rails Script (By Cat)",
 	HidePremium = false,
@@ -20,8 +17,8 @@ local auraOn = false
 local espOn = false
 local collectOn = false
 local brightOn = false
-
-local auraThread, espThread, collectThread, speedThread, jumpThread
+local auraThread, espThread, collectThread
+local wsConnection, jpConnection
 
 local rs = game:GetService("ReplicatedStorage")
 local remote = rs:WaitForChild("Shared"):WaitForChild("Network")
@@ -42,7 +39,6 @@ local function createBillboard(obj, txt)
 	label.TextScaled = true
 end
 
--- GUI Tab
 local Tab = Window:MakeTab({
 	Name = "Main",
 	Icon = "rbxassetid://4483345998",
@@ -54,16 +50,14 @@ Tab:AddToggle({
 	Default = false,
 	Callback = function(state)
 		speedLoop = state
-		if speedLoop then
-			speedThread = task.spawn(function()
-				while speedLoop do
-					local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-					if hum then hum.WalkSpeed = 18.9 end
-					task.wait(0.1)
-				end
+		if speedLoop and not wsConnection then
+			wsConnection = RunService.Heartbeat:Connect(function()
+				local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+				if hum then hum.WalkSpeed = 18.9 end
 			end)
-		elseif speedThread then
-			task.cancel(speedThread)
+		elseif wsConnection then
+			wsConnection:Disconnect()
+			wsConnection = nil
 		end
 	end
 })
@@ -73,16 +67,14 @@ Tab:AddToggle({
 	Default = false,
 	Callback = function(state)
 		jumpLoop = state
-		if jumpLoop then
-			jumpThread = task.spawn(function()
-				while jumpLoop do
-					local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-					if hum then hum.JumpPower = 13 end
-					task.wait(0.1)
-				end
+		if jumpLoop and not jpConnection then
+			jpConnection = RunService.Heartbeat:Connect(function()
+				local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+				if hum then hum.JumpPower = 13 end
 			end)
-		elseif jumpThread then
-			task.cancel(jumpThread)
+		elseif jpConnection then
+			jpConnection:Disconnect()
+			jpConnection = nil
 		end
 	end
 })
@@ -175,8 +167,12 @@ Tab:AddToggle({
 Tab:AddButton({
 	Name = "No Fog",
 	Callback = function()
-		lighting.FogEnd = 999999
 		lighting.FogStart = 0
+		lighting.FogEnd = 999999
+		lighting.Changed:Connect(function()
+			lighting.FogStart = 0
+			lighting.FogEnd = 999999
+		end)
 	end
 })
 
