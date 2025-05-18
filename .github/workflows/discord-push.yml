@@ -1,4 +1,4 @@
-name: Notify Discord on Push
+name: Notify Discord with Style
 
 on: [push]
 
@@ -6,25 +6,42 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send push info to Discord
+      - name: Send styled push info to Discord
         run: |
           REPO="${{ github.repository }}"
           USER="${{ github.actor }}"
           COMMIT_MSG="${{ github.event.head_commit.message }}"
-          FILES=$(echo "${{ toJson(github.event.head_commit.modified) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+          URL="${{ github.event.head_commit.url }}"
+
+          ADDED=$(echo "${{ toJson(github.event.head_commit.added) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+          MODIFIED=$(echo "${{ toJson(github.event.head_commit.modified) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+          REMOVED=$(echo "${{ toJson(github.event.head_commit.removed) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          [ -z "$ADDED" ] && ADDED="❌ None"
+          [ -z "$MODIFIED" ] && MODIFIED="❌ None"
+          [ -z "$REMOVED" ] && REMOVED="❌ None"
 
           PAYLOAD="{
             \"content\": null,
             \"embeds\": [
               {
-                \"title\": \"Push Event on ${REPO}\",
-                \"description\": \"**${USER}** pushed with message:\n> ${COMMIT_MSG}\n\n**Modified Files:**\n\`\`\`\n${FILES}\n\`\`\`\",
-                \"color\": 5814783
+                \"title\": \"🚀 New Push in \`${REPO}\`\",
+                \"description\": \"👤 **User:** \`${USER}\`\\n📝 **Message:**\n> ${COMMIT_MSG}\\n🔗 [View Commit](${URL})\",
+                \"color\": 15844367,
+                \"fields\": [
+                  {\"name\": \"🟩✨ Added Files\", \"value\": \"\`\`\`\n${ADDED}\n\`\`\`\"},
+                  {\"name\": \"🟨⚙️ Modified Files\", \"value\": \"\`\`\`\n${MODIFIED}\n\`\`\`\"},
+                  {\"name\": \"🟥🗑️ Removed Files\", \"value\": \"\`\`\`\n${REMOVED}\n\`\`\`\"}
+                ],
+                \"footer\": {
+                  \"text\": \"XScripts Webhook by Maximum V5🔥🗿\"
+                },
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
               }
             ]
           }"
 
           curl -H "Content-Type: application/json" \
-          -X POST \
-          -d "$PAYLOAD" \
-          https://discord.com/api/webhooks/1373491731068358797/dbZ0WxSAeVgNablRce4wbcpl3pYYADwJgSUf_i9A3Aea3_igUHXjPMso5FFvspTWh2mZ
+               -X POST \
+               -d "$PAYLOAD" \
+               https://discord.com/api/webhooks/1373491731068358797/dbZ0WxSAeVgNablRce4wbcpl3pYYADwJgSUf_i9A3Aea3_igUHXjPMso5FFvspTWh2mZ
