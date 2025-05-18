@@ -21,6 +21,8 @@ jobs:
           [ -z "$MODIFIED" ] && MODIFIED="❌ None"
           [ -z "$REMOVED" ] && REMOVED="❌ None"
 
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
           PAYLOAD="{
             \"content\": null,
             \"embeds\": [
@@ -34,9 +36,9 @@ jobs:
                   {\"name\": \"🟥🗑️ Removed Files\", \"value\": \"\`\`\`\n${REMOVED}\n\`\`\`\"}
                 ],
                 \"footer\": {
-                  \"text\": \"Github Webhook Logger\"
+                  \"text\": \"GitHub Webhook Logger by a silly cat :3\"
                 },
-                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+                \"timestamp\": \"${TIMESTAMP}\"
               }
             ]
           }"
@@ -44,4 +46,4 @@ jobs:
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "$PAYLOAD" \
-               https://discord.com/api/webhooks/1373491731068358797/dbZ0WxSAeVgNablRce4wbcpl3pYYADwJgSUf_i9A3Aea3_igUHXjPMso5FFvspTWh2mZ
+               "${{ secrets.DISCORD_WEBHOOK_URL }}"
