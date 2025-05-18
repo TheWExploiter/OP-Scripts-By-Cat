@@ -34,7 +34,7 @@ jobs:
                   {\"name\": \"🟥🗑️ Removed Files\", \"value\": \"\`\`\`\n${REMOVED}\n\`\`\`\"}
                 ],
                 \"footer\": {
-                  \"text\": \"XScripts Webhook by Maximum V5🔥🗿\"
+                  \"text\": \"Github Webhook Logger\"
                 },
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
               }
