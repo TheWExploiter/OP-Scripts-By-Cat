@@ -1,0 +1,30 @@
+name: Notify Discord on Push
+
+on: [push]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send push info to Discord
+        run: |
+          REPO="${{ github.repository }}"
+          USER="${{ github.actor }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          FILES=$(echo "${{ toJson(github.event.head_commit.modified) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          PAYLOAD="{
+            \"content\": null,
+            \"embeds\": [
+              {
+                \"title\": \"Push Event on ${REPO}\",
+                \"description\": \"**${USER}** pushed with message:\n> ${COMMIT_MSG}\n\n**Modified Files:**\n\`\`\`\n${FILES}\n\`\`\`\",
+                \"color\": 5814783
+              }
+            ]
+          }"
+
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "$PAYLOAD" \
+          https://discord.com/api/webhooks/1373491731068358797/dbZ0WxSAeVgNablRce4wbcpl3pYYADwJgSUf_i9A3Aea3_igUHXjPMso5FFvspTWh2mZ
