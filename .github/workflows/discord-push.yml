@@ -6,6 +6,9 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Prepare and send Discord notification
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -13,18 +16,15 @@ jobs:
           REPO: ${{ github.repository }}
           USER: ${{ github.actor }}
         run: |
-          # Parse the commit info from the GitHub event JSON file
           COMMIT_MSG=$(jq -r '.head_commit.message' "$GITHUB_EVENT_PATH")
           URL=$(jq -r '.head_commit.url' "$GITHUB_EVENT_PATH")
 
-          # Extract arrays of files added, modified, removed
           ADDED=$(jq -r '.head_commit.added | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
           MODIFIED=$(jq -r '.head_commit.modified | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
           REMOVED=$(jq -r '.head_commit.removed | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
 
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Build the JSON payload
           PAYLOAD=$(jq -n --arg repo "$REPO" \
                           --arg user "$USER" \
                           --arg msg "$COMMIT_MSG" \
@@ -51,7 +51,6 @@ jobs:
             ]
           }')
 
-          # Send to Discord webhook
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "$PAYLOAD" \
