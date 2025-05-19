@@ -6,44 +6,53 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send styled push info to Discord
+      - name: Prepare and send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          REPO: ${{ github.repository }}
+          USER: ${{ github.actor }}
         run: |
-          REPO="${{ github.repository }}"
-          USER="${{ github.actor }}"
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          URL="${{ github.event.head_commit.url }}"
+          # Parse the commit info from the GitHub event JSON file
+          COMMIT_MSG=$(jq -r '.head_commit.message' "$GITHUB_EVENT_PATH")
+          URL=$(jq -r '.head_commit.url' "$GITHUB_EVENT_PATH")
 
-          ADDED=$(echo "${{ toJson(github.event.head_commit.added) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
-          MODIFIED=$(echo "${{ toJson(github.event.head_commit.modified) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
-          REMOVED=$(echo "${{ toJson(github.event.head_commit.removed) }}" | jq -r '.[]' | sed ':a;N;$!ba;s/\n/\\n/g')
+          # Extract arrays of files added, modified, removed
+          ADDED=$(jq -r '.head_commit.added | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
+          MODIFIED=$(jq -r '.head_commit.modified | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
+          REMOVED=$(jq -r '.head_commit.removed | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
 
-          [ -z "$ADDED" ] && ADDED="❌ None"
-          [ -z "$MODIFIED" ] && MODIFIED="❌ None"
-          [ -z "$REMOVED" ] && REMOVED="❌ None"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-          PAYLOAD="{
-            \"content\": null,
-            \"embeds\": [
+          # Build the JSON payload
+          PAYLOAD=$(jq -n --arg repo "$REPO" \
+                          --arg user "$USER" \
+                          --arg msg "$COMMIT_MSG" \
+                          --arg url "$URL" \
+                          --arg added "$ADDED" \
+                          --arg modified "$MODIFIED" \
+                          --arg removed "$REMOVED" \
+                          --arg timestamp "$TIMESTAMP" \
+          '{
+            content: null,
+            embeds: [
               {
-                \"title\": \"🚀 New Push in \`${REPO}\`\",
-                \"description\": \"👤 **User:** \`${USER}\`\\n📝 **Message:**\n> ${COMMIT_MSG}\\n🔗 [View Commit](${URL})\",
-                \"color\": 15844367,
-                \"fields\": [
-                  {\"name\": \"🟩✨ Added Files\", \"value\": \"\`\`\`\n${ADDED}\n\`\`\`\"},
-                  {\"name\": \"🟨⚙️ Modified Files\", \"value\": \"\`\`\`\n${MODIFIED}\n\`\`\`\"},
-                  {\"name\": \"🟥🗑️ Removed Files\", \"value\": \"\`\`\`\n${REMOVED}\n\`\`\`\"}
+                title: ("🚀 New Push in `" + $repo + "`"),
+                description: ("👤 **User:** `" + $user + "`\n📝 **Message:**\n> " + $msg + "\n🔗 [View Commit](" + $url + ")"),
+                color: 15844367,
+                fields: [
+                  {name: "🟩✨ Added Files", value: "```" + $added + "```"},
+                  {name: "🟨⚙️ Modified Files", value: "```" + $modified + "```"},
+                  {name: "🟥🗑️ Removed Files", value: "```" + $removed + "```"}
                 ],
-                \"footer\": {
-                  \"text\": \"GitHub Webhook Logger by a silly cat :3\"
-                },
-                \"timestamp\": \"${TIMESTAMP}\"
+                footer: {text: "GitHub Webhook Logger by a silly cat :3"},
+                timestamp: $timestamp
               }
             ]
-          }"
+          }')
 
+          # Send to Discord webhook
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "$PAYLOAD" \
-               "${{ secrets.DISCORD_WEBHOOK_URL }}"
+               "$DISCORD_WEBHOOK_URL"
