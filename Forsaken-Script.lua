@@ -1,16 +1,14 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/jensonhirst/Orion/main/source"))()
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jensonhirst/Orion/main/source"))()
 
-local OrionLib = OrionLib
 local Window = OrionLib:MakeWindow({
-    Name = "Forsaken Script By Cat",
+    Name = "Forsaken Script V1",
     HidePremium = false,
     SaveConfig = false,
-    IntroText = "Forsaken Script"
+    ConfigFolder = "ForsakenConfig"
 })
 
 local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
+local Humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
 
 local MainTab = Window:MakeTab({
     Name = "Main",
@@ -18,12 +16,13 @@ local MainTab = Window:MakeTab({
     PremiumOnly = false
 })
 
+-- Auto Generator Button
 MainTab:AddButton({
-    Name = "Auto Generator (Click Once)",
+    Name = "Auto Generator (Press Once)",
     Callback = function()
-        task.spawn(function()
+        spawn(function()
             while true do
-                for i, v in pairs(workspace:GetDescendants()) do
+                for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("RemoteEvent") and v.Name == "RE" then
                         v:FireServer()
                     end
@@ -34,25 +33,29 @@ MainTab:AddButton({
     end
 })
 
+-- Buff Loop Speed
 MainTab:AddButton({
-    Name = "Buff Loop Speed (38)",
+    Name = "Buff Loop WalkSpeed (to 38)",
     Callback = function()
-        task.spawn(function()
+        spawn(function()
             while true do
-                Humanoid.WalkSpeed = 38
-                task.wait(1)
+                local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then humanoid.WalkSpeed = 38 end
+                task.wait(0.1)
             end
         end)
     end
 })
 
+-- Buff Loop JumpPower
 MainTab:AddButton({
-    Name = "Buff Loop JumpPower (50)",
+    Name = "Buff Loop JumpPower (to 50)",
     Callback = function()
-        task.spawn(function()
+        spawn(function()
             while true do
-                Humanoid.JumpPower = 50
-                task.wait(1)
+                local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then humanoid.JumpPower = 50 end
+                task.wait(0.1)
             end
         end)
     end
