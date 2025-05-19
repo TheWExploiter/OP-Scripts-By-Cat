@@ -6,52 +6,64 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Prepare and send Discord notification
+      - name: Send styled push info to Discord
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          REPO: ${{ github.repository }}
-          USER: ${{ github.actor }}
         run: |
-          COMMIT_MSG=$(jq -r '.head_commit.message' "$GITHUB_EVENT_PATH")
-          URL=$(jq -r '.head_commit.url' "$GITHUB_EVENT_PATH")
+          REPO="${GITHUB_REPOSITORY}"
+          USER="${GITHUB_ACTOR}"
+          COMMIT_MSG="${GITHUB_EVENT_HEAD_COMMIT_MESSAGE}"
+          URL="${GITHUB_EVENT_HEAD_COMMIT_URL}"
 
-          ADDED=$(jq -r '.head_commit.added | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
-          MODIFIED=$(jq -r '.head_commit.modified | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
-          REMOVED=$(jq -r '.head_commit.removed | if length == 0 then "❌ None" else join("\n") end' "$GITHUB_EVENT_PATH")
+          # Extract push data using GitHub's event JSON
+          EVENT_PATH="$GITHUB_EVENT_PATH"
+
+          ADDED=$(jq -r '.head_commit.added | join("\n")' "$EVENT_PATH")
+          MODIFIED=$(jq -r '.head_commit.modified | join("\n")' "$EVENT_PATH")
+          REMOVED=$(jq -r '.head_commit.removed | join("\n")' "$EVENT_PATH")
+
+          [ -z "$ADDED" ]    && ADDED="❌ None"
+          [ -z "$MODIFIED" ] && MODIFIED="❌ None"
+          [ -z "$REMOVED" ]  && REMOVED="❌ None"
 
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          PAYLOAD=$(jq -n --arg repo "$REPO" \
-                          --arg user "$USER" \
-                          --arg msg "$COMMIT_MSG" \
-                          --arg url "$URL" \
-                          --arg added "$ADDED" \
-                          --arg modified "$MODIFIED" \
-                          --arg removed "$REMOVED" \
-                          --arg timestamp "$TIMESTAMP" \
-          '{
-            content: null,
-            embeds: [
-              {
-                title: ("🚀 New Push in `" + $repo + "`"),
-                description: ("👤 **User:** `" + $user + "`\n📝 **Message:**\n> " + $msg + "\n🔗 [View Commit](" + $url + ")"),
-                color: 15844367,
-                fields: [
-                  {name: "🟩✨ Added Files", value: "```" + $added + "```"},
-                  {name: "🟨⚙️ Modified Files", value: "```" + $modified + "```"},
-                  {name: "🟥🗑️ Removed Files", value: "```" + $removed + "```"}
-                ],
-                footer: {text: "GitHub Webhook Logger by a silly cat :3"},
-                timestamp: $timestamp
-              }
-            ]
-          }')
+          EMBED=$(jq -n \
+            --arg repo "$REPO" \
+            --arg user "$USER" \
+            --arg msg "$COMMIT_MSG" \
+            --arg url "$URL" \
+            --arg added "$ADDED" \
+            --arg modified "$MODIFIED" \
+            --arg removed "$REMOVED" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              "content": null,
+              "embeds": [
+                {
+                  "title": ("🚀 New Push in " + $repo),
+                  "url": $url,
+                  "description": $msg,
+                  "color": 5814783,
+                  "author": {
+                    "name": $user,
+                    "url": ("https://github.com/" + $user),
+                    "icon_url": ("https://github.com/" + $user + ".png?size=64")
+                  },
+                  "fields": [
+                    { "name": "➕ Added",     "value": $added,     "inline": true },
+                    { "name": "✏️ Modified", "value": $modified,  "inline": true },
+                    { "name": "➖ Removed",  "value": $removed,   "inline": true }
+                  ],
+                  "footer": {
+                    "text": "GitHub Actions • " + $repo,
+                    "icon_url": "https://github.githubassets.com/favicon.ico"
+                  },
+                  "timestamp": $timestamp
+                }
+              ]
+            }')
 
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "$PAYLOAD" \
+          curl -s -H "Content-Type: application/json" \
+               -d "${EMBED}" \
                "$DISCORD_WEBHOOK_URL"
