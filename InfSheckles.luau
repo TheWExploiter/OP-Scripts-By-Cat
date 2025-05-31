@@ -1,23 +1,23 @@
 -- this script is open source skidder kys
-while true do
-    local RunService = game:GetService("RunService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Players = game:GetService("Players")
 
-    local localPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-    RunService.Heartbeat:Connect(function()
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= localPlayer then
-                local character = player.Character
-                if character then
-                    local tool = character:FindFirstChildOfClass("Tool")
-                    if tool then
-                        ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("SellPet_RE"):FireServer(tool)
+RunService.RenderStepped:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char then
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool then
+                    local sellEvent = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("SellPet_RE")
+                    for i = 1, 5 do
+                        sellEvent:FireServer(tool)
                     end
                 end
             end
         end
-    end)
-    task.wait(0.01)
-end
+    end
+end)
